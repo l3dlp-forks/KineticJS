@@ -1,9 +1,12 @@
-jsdoc-toolkit
-jsdoc-master
 dist
-tests/js/unitTests.js
+documentation
 analysis
 node_modules
+bower_components
+phantomjs.exe
+docs
+jsdoc-template
+test/sandbox.html
 
 # Numerous always-ignore extensions
 *.diff
@@ -28,6 +31,7 @@ Thumbs.db
 nbproject
 *.sublime-project
 *.sublime-workspace
+*.md.html
 
 # Dreamweaver added files
 _notes

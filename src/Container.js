@@ -1,6 +1,6 @@
 (function() {
     Kinetic.Util.addMethods(Kinetic.Container, {
-        _containerInit: function(config) {
+        __init: function(config) {
             this.children = new Kinetic.Collection();
             Kinetic.Node.call(this, config);
         },
@@ -8,14 +8,35 @@
          * returns a {@link Kinetic.Collection} of direct descendant nodes
          * @method
          * @memberof Kinetic.Container.prototype
+         * @param {Function} [filterFunc] filter function
+         * @returns {Kinetic.Collection}
+         * @example
+         * // get all children
+         * var children = layer.getChildren();
+         *
+         * // get only circles
+         * var circles = layer.getChildren(function(node){
+         *    return node.getClassName() === 'Circle';
+         * });
          */
-        getChildren: function() {
-            return this.children;
+        getChildren: function(filterFunc) {
+            if (!filterFunc) {
+                return this.children;
+            } else {
+                var results = new Kinetic.Collection();
+                this.children.each(function(child){
+                    if (filterFunc(child)) {
+                        results.push(child);
+                    }
+                });
+                return results;
+            }
         },
         /**
          * determine if node has children
          * @method
          * @memberof Kinetic.Container.prototype
+         * @returns {Boolean}
          */
         hasChildren: function() {
             return this.getChildren().length > 0;
@@ -26,17 +47,20 @@
          * @memberof Kinetic.Container.prototype
          */
         removeChildren: function() {
-            var children = this.children,
-                child;
-
-            while(children.length > 0) {
-                var child = children[0];
+            var children = Kinetic.Collection.toCollection(this.children);
+            var child;
+            for (var i = 0; i < children.length; i++) {
+                child = children[i];
+                // reset parent to prevent many _setChildrenIndices calls
+                delete child.parent;
+                child.index = 0;
                 if (child.hasChildren()) {
                     child.removeChildren();
                 }
                 child.remove();
             }
-
+            children = null;
+            this.children = new Kinetic.Collection();
             return this;
         },
         /**
@@ -45,20 +69,41 @@
          * @memberof Kinetic.Container.prototype
          */
         destroyChildren: function() {
-            var children = this.children;
-            while(children.length > 0) {
-                children[0].destroy();
+           var children = Kinetic.Collection.toCollection(this.children);
+            var child;
+            for (var i = 0; i < children.length; i++) {
+                child = children[i];
+                // reset parent to prevent many _setChildrenIndices calls
+                delete child.parent;
+                child.index = 0;
+                child.destroy();
             }
+            children = null;
+            this.children = new Kinetic.Collection();
             return this;
         },
         /**
-         * add node to container
+         * Add node or nodes to container.
          * @method
          * @memberof Kinetic.Container.prototype
-         * @param {Node} child
+         * @param {...Kinetic.Node} child
+         * @returns {Container}
+         * @example
+         * layer.add(shape1, shape2, shape3);
          */
         add: function(child) {
-            var go = Kinetic.Global, children = this.children;
+            if (arguments.length > 1) {
+                for (var i = 0; i < arguments.length; i++) {
+                    this.add(arguments[i]);
+                }
+                return this;
+            }
+            if (child.getParent()) {
+                child.moveTo(this);
+                return this;
+            }
+            var children = this.children;
+            this._validateAdd(child);
             child.index = children.length;
             child.parent = this;
             children.push(child);
@@ -79,58 +124,74 @@
         },
         /**
          * return a {@link Kinetic.Collection} of nodes that match the selector.  Use '#' for id selections
-         * and '.' for name selections.  You can also select by type or class name
+         * and '.' for name selections.  You can also select by type or class name. Pass multiple selectors
+         * separated by a space.
          * @method
          * @memberof Kinetic.Container.prototype
          * @param {String} selector
+         * @returns {Collection}
          * @example
-         * // select node with id foo<br>
-         * var node = stage.get('#foo');<br><br>
+         * // select node with id foo
+         * var node = stage.find('#foo');
          *
-         * // select nodes with name bar inside layer<br>
-         * var nodes = layer.get('.bar');<br><br>
+         * // select nodes with name bar inside layer
+         * var nodes = layer.find('.bar');
          *
-         * // select all groups inside layer<br>
-         * var nodes = layer.get('Group');<br><br>
+         * // select all groups inside layer
+         * var nodes = layer.find('Group');
          *
-         * // select all rectangles inside layer<br>
-         * var nodes = layer.get('Rect');
+         * // select all rectangles inside layer
+         * var nodes = layer.find('Rect');
+         *
+         * // select node with an id of foo or a name of bar inside layer
+         * var nodes = layer.find('#foo, .bar');
          */
-        get: function(selector) {
-            var collection = new Kinetic.Collection();
-            // ID selector
-            if(selector.charAt(0) === '#') {
-                var node = this._getNodeById(selector.slice(1));
-                if(node) {
-                    collection.push(node);
+        find: function(selector) {
+            var retArr = [],
+                selectorArr = selector.replace(/ /g, '').split(','),
+                len = selectorArr.length,
+                n, i, sel, arr, node, children, clen;
+
+            for (n = 0; n < len; n++) {
+                sel = selectorArr[n];
+
+                // id selector
+                if(sel.charAt(0) === '#') {
+                    node = this._getNodeById(sel.slice(1));
+                    if(node) {
+                        retArr.push(node);
+                    }
+                }
+                // name selector
+                else if(sel.charAt(0) === '.') {
+                    arr = this._getNodesByName(sel.slice(1));
+                    retArr = retArr.concat(arr);
+                }
+                // unrecognized selector, pass to children
+                else {
+                    children = this.getChildren();
+                    clen = children.length;
+                    for(i = 0; i < clen; i++) {
+                        retArr = retArr.concat(children[i]._get(sel));
+                    }
                 }
             }
-            // name selector
-            else if(selector.charAt(0) === '.') {
-                var nodeList = this._getNodesByName(selector.slice(1));
-                Kinetic.Collection.apply(collection, nodeList);
-            }
-            // unrecognized selector, pass to children
-            else {
-                var retArr = [];
-                var children = this.getChildren();
-                var len = children.length;
-                for(var n = 0; n < len; n++) {
-                    retArr = retArr.concat(children[n]._get(selector));
-                }
-                Kinetic.Collection.apply(collection, retArr);
-            }
-            return collection;
+
+            return Kinetic.Collection.toCollection(retArr);
+        },
+        findOne: function(selector) {
+            return this.find(selector)[0];
         },
         _getNodeById: function(key) {
-            var stage = this.getStage(), go = Kinetic.Global, node = go.ids[key];
+            var node = Kinetic.ids[key];
+
             if(node !== undefined && this.isAncestorOf(node)) {
                 return node;
             }
             return null;
         },
         _getNodesByName: function(key) {
-            var go = Kinetic.Global, arr = go.names[key] || [];
+            var arr = Kinetic.names[key] || [];
             return this._getDescendants(arr);
         },
         _get: function(selector) {
@@ -198,107 +259,197 @@
         },
         /**
          * get all shapes that intersect a point.  Note: because this method must clear a temporary
-         * canvas and redraw every shape inside the container, it should only be used for special sitations 
+         * canvas and redraw every shape inside the container, it should only be used for special sitations
          * because it performs very poorly.  Please use the {@link Kinetic.Stage#getIntersection} method if at all possible
          * because it performs much better
          * @method
          * @memberof Kinetic.Container.prototype
          * @param {Object} pos
+         * @param {Number} pos.x
+         * @param {Number} pos.y
+         * @returns {Array} array of shapes
          */
-        getAllIntersections: function() {
-            var pos = Kinetic.Util._getXY(Array.prototype.slice.call(arguments));
+        getAllIntersections: function(pos) {
             var arr = [];
-            var shapes = this.get('Shape');
 
-            var len = shapes.length;
-            for(var n = 0; n < len; n++) {
-                var shape = shapes[n];
+            this.find('Shape').each(function(shape) {
                 if(shape.isVisible() && shape.intersects(pos)) {
                     arr.push(shape);
                 }
-            }
+            });
 
             return arr;
         },
         _setChildrenIndices: function() {
-            var children = this.children, len = children.length;
-            for(var n = 0; n < len; n++) {
-                children[n].index = n;
-            }
+            this.children.each(function(child, n) {
+                child.index = n;
+            });
         },
-        drawScene: function(canvas) {
+        drawScene: function(can, top) {
             var layer = this.getLayer(),
-                clip = !!this.getClipFunc(),
-                children, n, len;
-                
-            if (!canvas && layer) {
-                canvas = layer.getCanvas(); 
-            }  
+                canvas = can || (layer && layer.getCanvas()),
+                context = canvas && canvas.getContext(),
+                cachedCanvas = this._cache.canvas,
+                cachedSceneCanvas = cachedCanvas && cachedCanvas.scene;
 
-            if(this.isVisible()) {
-                if (clip) {
-                    canvas._clip(this);
+            if (this.isVisible()) {
+                if (cachedSceneCanvas) {
+                    this._drawCachedSceneCanvas(context);
                 }
-                
-                children = this.children; 
-                len = children.length;
-                
-                for(n = 0; n < len; n++) {
-                    children[n].drawScene(canvas);
-                }
-                
-                if (clip) {
-                    canvas.getContext().restore();
+                else {
+                    this._drawChildren(canvas, 'drawScene', top);
                 }
             }
-
             return this;
         },
-        drawHit: function() {
-            var clip = !!this.getClipFunc() && this.nodeType !== 'Stage',
-                n = 0, 
-                len = 0, 
-                children = [],
-                hitCanvas;
+        drawHit: function(can, top) {
+            var layer = this.getLayer(),
+                canvas = can || (layer && layer.hitCanvas),
+                context = canvas && canvas.getContext(),
+                cachedCanvas = this._cache.canvas,
+                cachedHitCanvas = cachedCanvas && cachedCanvas.hit;
 
-            if(this.shouldDrawHit()) {
-                if (clip) {
-                    hitCanvas = this.getLayer().hitCanvas; 
-                    hitCanvas._clip(this);
+            if (this.shouldDrawHit(canvas)) {
+                if (layer) {
+                    layer.clearHitCache();
                 }
-                
-                children = this.children; 
-                len = children.length;
-
-                for(n = 0; n < len; n++) {
-                    children[n].drawHit();
+                if (cachedHitCanvas) {
+                    this._drawCachedHitCanvas(context);
                 }
-                if (clip) {
-                    hitCanvas.getContext().restore();
+                else {
+                    this._drawChildren(canvas, 'drawHit', top);
                 }
             }
-
             return this;
+        },
+        _drawChildren: function(canvas, drawMethod, top) {
+            var layer = this.getLayer(),
+                context = canvas && canvas.getContext(),
+                clipWidth = this.getClipWidth(),
+                clipHeight = this.getClipHeight(),
+                hasClip = clipWidth && clipHeight,
+                clipX, clipY;
+
+            if (hasClip && layer) {
+                clipX = this.getClipX();
+                clipY = this.getClipY();
+
+                context.save();
+                layer._applyTransform(this, context);
+                context.beginPath();
+                context.rect(clipX, clipY, clipWidth, clipHeight);
+                context.clip();
+                context.reset();
+            }
+
+            this.children.each(function(child) {
+                child[drawMethod](canvas, top);
+            });
+
+            if (hasClip) {
+                context.restore();
+            }
+        },
+        shouldDrawHit: function(canvas) {
+            var layer = this.getLayer();
+            return  (canvas && canvas.isCache) || (layer && layer.hitGraphEnabled())
+                && this.isVisible() && !Kinetic.isDragging();
         }
     });
 
     Kinetic.Util.extend(Kinetic.Container, Kinetic.Node);
+    // deprecated methods
+    Kinetic.Container.prototype.get = Kinetic.Container.prototype.find;
 
     // add getters setters
-    Kinetic.Node.addGetterSetter(Kinetic.Container, 'clipFunc');
-
+    Kinetic.Factory.addComponentsGetterSetter(Kinetic.Container, 'clip', ['x', 'y', 'width', 'height']);
     /**
-     * set clipping function 
-     * @name setClipFunc
+     * get/set clip
      * @method
+     * @name clip
      * @memberof Kinetic.Container.prototype
-     * @param {Number} deg
+     * @param {Object} clip
+     * @param {Number} clip.x
+     * @param {Number} clip.y
+     * @param {Number} clip.width
+     * @param {Number} clip.height
+     * @returns {Object}
+     * @example
+     * // get clip
+     * var clip = container.clip();
+     *
+     * // set clip
+     * container.setClip({
+     *   x: 20,
+     *   y: 20,
+     *   width: 20,
+     *   height: 20
+     * });
      */
 
+    Kinetic.Factory.addGetterSetter(Kinetic.Container, 'clipX');
     /**
-     * get clipping function 
-     * @name getClipFunc
+     * get/set clip x
+     * @name clipX
      * @method
      * @memberof Kinetic.Container.prototype
+     * @param {Number} x
+     * @returns {Number}
+     * @example
+     * // get clip x
+     * var clipX = container.clipX();
+     *
+     * // set clip x
+     * container.clipX(10);
      */
+
+    Kinetic.Factory.addGetterSetter(Kinetic.Container, 'clipY');
+    /**
+     * get/set clip y
+     * @name clipY
+     * @method
+     * @memberof Kinetic.Container.prototype
+     * @param {Number} y
+     * @returns {Number}
+     * @example
+     * // get clip y
+     * var clipY = container.clipY();
+     *
+     * // set clip y
+     * container.clipY(10);
+     */
+
+    Kinetic.Factory.addGetterSetter(Kinetic.Container, 'clipWidth');
+    /**
+     * get/set clip width
+     * @name clipWidth
+     * @method
+     * @memberof Kinetic.Container.prototype
+     * @param {Number} width
+     * @returns {Number}
+     * @example
+     * // get clip width
+     * var clipWidth = container.clipWidth();
+     *
+     * // set clip width
+     * container.clipWidth(100);
+     */
+
+    Kinetic.Factory.addGetterSetter(Kinetic.Container, 'clipHeight');
+    /**
+     * get/set clip height
+     * @name clipHeight
+     * @method
+     * @memberof Kinetic.Container.prototype
+     * @param {Number} height
+     * @returns {Number}
+     * @example
+     * // get clip height
+     * var clipHeight = container.clipHeight();
+     *
+     * // set clip height
+     * container.clipHeight(100);
+     */
+
+    Kinetic.Collection.mapMethods(Kinetic.Container);
 })();

@@ -10,32 +10,29 @@
      * @@shapeParams
      * @@nodeParams
      * @example
-     * var hexagon = new Kinetic.RegularPolygon({<br>
-     *   x: 100,<br>
-     *   y: 200,<br>
-     *   sides: 6,<br>
-     *   radius: 70,<br>
-     *   fill: 'red',<br>
-     *   stroke: 'black',<br>
-     *   strokeWidth: 4<br>
+     * var hexagon = new Kinetic.RegularPolygon({
+     *   x: 100,
+     *   y: 200,
+     *   sides: 6,
+     *   radius: 70,
+     *   fill: 'red',
+     *   stroke: 'black',
+     *   strokeWidth: 4
      * });
      */
     Kinetic.RegularPolygon = function(config) {
-        this._initRegularPolygon(config);
+        this.___init(config);
     };
 
     Kinetic.RegularPolygon.prototype = {
-        _initRegularPolygon: function(config) {
-            this.createAttrs();
-
+        ___init: function(config) {
             // call super constructor
             Kinetic.Shape.call(this, config);
             this.className = 'RegularPolygon';
-            this._setDrawFuncs();
+            this.sceneFunc(this._sceneFunc);
         },
-        drawFunc: function(canvas) {
-            var context = canvas.getContext(), 
-                sides = this.attrs.sides, 
+        _sceneFunc: function(context) {
+            var sides = this.attrs.sides,
                 radius = this.attrs.radius,
                 n, x, y;
 
@@ -48,13 +45,13 @@
                 context.lineTo(x, y);
             }
             context.closePath();
-            canvas.fillStroke(this);
+            context.fillStrokeShape(this);
         }
     };
     Kinetic.Util.extend(Kinetic.RegularPolygon, Kinetic.Shape);
 
     // add getters setters
-    Kinetic.Node.addGetterSetter(Kinetic.RegularPolygon, 'radius', 0);
+    Kinetic.Factory.addGetterSetter(Kinetic.RegularPolygon, 'radius', 0);
 
     /**
      * set radius
@@ -71,7 +68,7 @@
      * @memberof Kinetic.RegularPolygon.prototype
      */
 
-    Kinetic.Node.addGetterSetter(Kinetic.RegularPolygon, 'sides', 0);
+    Kinetic.Factory.addGetterSetter(Kinetic.RegularPolygon, 'sides', 0);
 
     /**
      * set number of sides
@@ -87,4 +84,6 @@
      * @method
      * @memberof Kinetic.RegularPolygon.prototype
      */
+
+    Kinetic.Collection.mapMethods(Kinetic.RegularPolygon);
 })();

@@ -13,74 +13,79 @@
      * @@shapeParams
      * @@nodeParams
      * @example
-     * // create simple circle
-     * var circle = new Kinetic.Circle({<br>
-     *   radius: 40,<br>
-     *   fill: 'red',<br>
-     *   stroke: 'black'<br>
-     *   strokeWidth: 5<br>
-     * });<br><br>
-     *
-     * // create ellipse<br>
-     * var circle = new Kinetic.Circle({<br>
-     *   radius: 5,<br>
-     *   fill: 'red',<br>
-     *   stroke: 'black'<br>
-     *   strokeWidth: 5,<br>
-     *   scaleX: 2,<br>
-     *   strokeScaleEnabled: false<br>
+     * // create circle
+     * var circle = new Kinetic.Circle({
+     *   radius: 40,
+     *   fill: 'red',
+     *   stroke: 'black'
+     *   strokeWidth: 5
      * });
      */
     Kinetic.Circle = function(config) {
-        this._initCircle(config);
+        this.___init(config);
     };
 
     Kinetic.Circle.prototype = {
-        _initCircle: function(config) {
-            this.createAttrs();
+        ___init: function(config) {
             // call super constructor
             Kinetic.Shape.call(this, config);
             this.className = CIRCLE;
-            this._setDrawFuncs();
+            this.sceneFunc(this._sceneFunc);
         },
-        drawFunc: function(canvas) {
-            var context = canvas.getContext();
-
+        _sceneFunc: function(context) {
             context.beginPath();
             context.arc(0, 0, this.getRadius(), 0, PIx2, false);
             context.closePath();
-            canvas.fillStroke(this);
+            context.fillStrokeShape(this);
         },
+        // implements Shape.prototype.getWidth()
         getWidth: function() {
             return this.getRadius() * 2;
         },
+        // implements Shape.prototype.getHeight()
         getHeight: function() {
             return this.getRadius() * 2;
         },
+        // implements Shape.prototype.setWidth()
         setWidth: function(width) {
             Kinetic.Node.prototype.setWidth.call(this, width);
-            this.setRadius(width / 2);
+            if (this.radius() !== width / 2) {
+                this.setRadius(width / 2);
+            }
         },
+        // implements Shape.prototype.setHeight()
         setHeight: function(height) {
             Kinetic.Node.prototype.setHeight.call(this, height);
-            this.setRadius(height / 2);
+            if (this.radius() !== height / 2) {
+                this.setRadius(height / 2);
+            }
+        },
+        setRadius : function(val) {
+            this._setAttr('radius', val);
+            this.setWidth(val * 2);
+            this.setHeight(val * 2);
         }
     };
     Kinetic.Util.extend(Kinetic.Circle, Kinetic.Shape);
 
     // add getters setters
-    Kinetic.Node.addGetterSetter(Kinetic.Circle, 'radius', 0);
+    Kinetic.Factory.addGetter(Kinetic.Circle, 'radius', 0);
+    Kinetic.Factory.addOverloadedGetterSetter(Kinetic.Circle, 'radius');
 
     /**
-     * set radius
+     * get/set radius
+     * @name radius
      * @method
      * @memberof Kinetic.Circle.prototype
      * @param {Number} radius
+     * @returns {Number}
+     * @example
+     * // get radius
+     * var radius = circle.radius();
+     *
+     * // set radius
+     * circle.radius(10);
      */
 
-    /**
-     * get radius
-     * @method
-     * @memberof Kinetic.Circle.prototype
-     */
+    Kinetic.Collection.mapMethods(Kinetic.Circle);
 })();

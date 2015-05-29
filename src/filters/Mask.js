@@ -5,11 +5,11 @@
 		var d = [];
 		d.push(idata.data[idx++], idata.data[idx++], idata.data[idx++], idata.data[idx++]);
 		return d;
-	};
+	}
 
 	function rgbDistance(p1, p2) {
 		return Math.sqrt(Math.pow(p1[0] - p2[0], 2) + Math.pow(p1[1] - p2[1], 2) + Math.pow(p1[2] - p2[2], 2));
-	};
+	}
 
 	function rgbMean(pTab) {
 		var m = [0, 0, 0];
@@ -25,7 +25,7 @@
 		m[2] /= pTab.length;
 
 		return m;
-	};
+	}
 
 	function backgroundMask(idata, threshold) {
 		var rgbv_no = pixelAt(idata, 0, 0);
@@ -34,7 +34,7 @@
 		var rgbv_se = pixelAt(idata, idata.width - 1, idata.height - 1);
 
 
-		var thres = threshold || 10; 
+		var thres = threshold || 10;
 		if (rgbDistance(rgbv_no, rgbv_ne) < thres && rgbDistance(rgbv_ne, rgbv_se) < thres && rgbDistance(rgbv_se, rgbv_so) < thres && rgbDistance(rgbv_so, rgbv_no) < thres) {
 
 			// Mean color
@@ -49,13 +49,13 @@
 
 			return mask;
 		}
-	};
+	}
 
 	function applyMask(idata, mask) {
 		for (var i = 0; i < idata.width * idata.height; i++) {
 			idata.data[4 * i + 3] = mask[i];
 		}
-	};
+	}
 
 	function erodeMask(mask, sw, sh) {
 
@@ -89,7 +89,7 @@
 		}
 
 		return maskResult;
-	};
+	}
 
 	function dilateMask(mask, sw, sh) {
 
@@ -123,7 +123,7 @@
 		}
 
 		return maskResult;
-	};
+	}
 
 	function smoothEdgeMask(mask, sw, sh) {
 
@@ -161,38 +161,37 @@
 	
 	/**
 	 * Mask Filter
-	 *
-	 * Only crop unicolor background images for instance
-	 *
 	 * @function
+	 * @name Mask
 	 * @memberof Kinetic.Filters
 	 * @param {Object} imageData
+	 * @example
+     * node.cache();
+     * node.filters([Kinetic.Filters.Mask]);
+     * node.threshold(0.1);
 	 */
-	Kinetic.Filters.Mask = function(idata) {
+	Kinetic.Filters.Mask = function(imageData) {
 		// Detect pixels close to the background color
-		var threshold = this.getFilterThreshold(),
-		    mask = backgroundMask(idata, threshold);
+		var threshold = this.threshold(),
+        mask = backgroundMask(imageData, threshold);
 		if (mask) {
 			// Erode
-			mask = erodeMask(mask, idata.width, idata.height);
+			mask = erodeMask(mask, imageData.width, imageData.height);
 
 			// Dilate
-			mask = dilateMask(mask, idata.width, idata.height);
+			mask = dilateMask(mask, imageData.width, imageData.height);
 
 			// Gradient
-			mask = smoothEdgeMask(mask, idata.width, idata.height);
+			mask = smoothEdgeMask(mask, imageData.width, imageData.height);
 
 			// Apply mask
-			applyMask(idata, mask);
+			applyMask(imageData, mask);
 			
 			// todo : Update hit region function according to mask
 		}
 
-		return idata;
+		return imageData;
 	};
 
-	Kinetic.Node.addFilterGetterSetter(Kinetic.Image, 'filterThreshold', 0);
-
-	//threshold The RGB euclidian distance threshold (default : 10) 
-
+	Kinetic.Factory.addGetterSetter(Kinetic.Node, 'threshold', 0, null, Kinetic.Factory.afterSetFilter);
 })();

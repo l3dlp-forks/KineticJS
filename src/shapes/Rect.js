@@ -9,33 +9,32 @@
      * @@shapeParams
      * @@nodeParams
      * @example
-     * var rect = new Kinetic.Rect({<br>
-     *   width: 100,<br>
-     *   height: 50,<br>
-     *   fill: 'red',<br>
-     *   stroke: 'black'<br>
-     *   strokeWidth: 5<br>
+     * var rect = new Kinetic.Rect({
+     *   width: 100,
+     *   height: 50,
+     *   fill: 'red',
+     *   stroke: 'black',
+     *   strokeWidth: 5
      * });
      */
     Kinetic.Rect = function(config) {
-        this._initRect(config);
+        this.___init(config);
     };
-    
+
     Kinetic.Rect.prototype = {
-        _initRect: function(config) {
-            this.createAttrs();
+        ___init: function(config) {
             Kinetic.Shape.call(this, config);
             this.className = 'Rect';
-            this._setDrawFuncs();
+            this.sceneFunc(this._sceneFunc);
         },
-        drawFunc: function(canvas) {
-            var context = canvas.getContext(),
-                cornerRadius = this.getCornerRadius(), 
-                width = this.getWidth(), 
+        _sceneFunc: function(context) {
+            var cornerRadius = this.getCornerRadius(),
+                width = this.getWidth(),
                 height = this.getHeight();
-                
-            context.beginPath();
+
             
+            context.beginPath();
+
             if(!cornerRadius) {
                 // simple rect - don't bother doing all that complicated maths stuff.
                 context.rect(0, 0, width, height);
@@ -53,27 +52,27 @@
                 context.arc(cornerRadius, cornerRadius, cornerRadius, Math.PI, Math.PI * 3 / 2, false);
             }
             context.closePath();
-            canvas.fillStroke(this);
+            context.fillStrokeShape(this);
         }
     };
 
     Kinetic.Util.extend(Kinetic.Rect, Kinetic.Shape);
 
-    Kinetic.Node.addGetterSetter(Kinetic.Rect, 'cornerRadius', 0);
-
+    Kinetic.Factory.addGetterSetter(Kinetic.Rect, 'cornerRadius', 0);
     /**
-     * set corner radius
-     * @name setCornerRadius
+     * get/set corner radius
+     * @name cornerRadius
      * @method
      * @memberof Kinetic.Rect.prototype
-     * @param {Number} corner radius
+     * @param {Number} cornerRadius
+     * @returns {Number}
+     * @example
+     * // get corner radius
+     * var cornerRadius = rect.cornerRadius();
+     * 
+     * // set corner radius
+     * rect.cornerRadius(10);
      */
 
-    /**
-     * get corner radius
-     * @name getCornerRadius
-     * @method
-     * @memberof Kinetic.Rect.prototype
-     */
-
+    Kinetic.Collection.mapMethods(Kinetic.Rect);
 })();

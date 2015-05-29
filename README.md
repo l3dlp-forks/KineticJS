@@ -1,25 +1,49 @@
-#Building the KineticJS Framework 
-To build the framework, you need to have node and grunt installed. After that, run `npm install` to install the node module dependencies.
+##Mothballed
 
-To build a development version of the framework, run `grunt dev`. To run a full build, which also produces the minified version and the individually minified modules for the custom build, run `grunt full`.   
+Hi all! I will no longer be maintaining this repo or the official KineticJS website because I have moved onto other ventures and projects.  The latest version of KineticJS, 5.1.0, is very solid and can still be used in production applications.  Please feel free to fork the repo if you'd like to make changes.
+
+Also, you can now find tars of every stable KineticJS build on [www.kineticjs.com](http://www.kineticjs.com)
+
+#Installation
+
+* `bower install kineticjs`
+* `npm install kinetic` - for Browserify. For nodejs you have to install some [dependencies](#NodeJS)
+
+###NodeJS
+
+Support of NodeJS is experimental.
+
+We are using [node-canvas](https://github.com/LearnBoost/node-canvas) to create canvas element.
+
+1. Install node-canvas [https://github.com/LearnBoost/node-canvas/wiki/_pages](https://github.com/LearnBoost/node-canvas/wiki/_pages)
+2. `npm install jsdom`
+3. `npm install kinetic`
+
+See file `nodejs-demo.js` for example.
+
+#Dev environment
+
+Before doing all dev stuff make sure you have node installed. After that, run `npm install --dev` in the main directory to install the node module dependencies.
+
+Run `grunt --help` to see all build options.
+
+##Building the KineticJS Framework 
+
+To build a development version of the framework, run `grunt dev`. To run a full build, which also produces the minified version and the individually minified modules for the custom build, run `grunt full`.  You can also run `grunt beta` to generate a beta version.   
 
 If you add a file in the src directory, be sure to add the filename to the sourceFiles array variable in Gruntfile.js.
 
-#Testing
+##Testing
 
-### Getting the tests up and running
-Currently, KineticJS has unit, functional, performance, manual, and special test suites.  To build the unit tests, you'll need to build the `unitTests.js` file by running `grunt test` and then opening `unitTests.html`.  Open `tests/html/index.html` to navigate to different test suites.  
+[![Build Status](https://travis-ci.org/ericdrowell/KineticJS.png)](https://travis-ci.org/ericdrowell/KineticJS)
 
-### Running the tests
-Unit, functional, and performance tests output the results to the console via `console.log()` so be sure to have it open.  
+KineticJS uses Mocha for testing. 
 
-In order for the data url tests and image manipulation tests to pass, you need to run the unit test suite on a web server due to canvas security constraints ([read more about that here](http://www.whatwg.org/specs/web-apps/current-work/multipage/the-canvas-element.html#security-with-canvas-elements)).  All tests should pass in Google Chrome on Windows 7 with no warnings, and all tests should pass with some warnings in other browsers and operating systems.  
+* If you need run test only one time run `grunt test`.
+* While developing it is easy to use `grunt server` with watch task. Just run it and go to [http://localhost:8080/test/runner.html](http://localhost:8080/test/runner.html). After src file change kinetic-dev.js will be automatically created, so you just need refresh test the page.
 
-### Updating the tests
+KineticJS is covered with hundreds of tests and well over a thousand assertions.  KineticJS uses TDD (test driven development) which means that every new feature or bug fix is accompanied with at least one new test. 
 
-To add / modify unit tests, be sure to do so in the `tests/js/unit` directory, because these are the source test files that are concatenated together when building `unitTests.js`.  Use `test()` for hard tests which will throw an error if something fails, and use `warn()` for soft tests that will allow the tests to continue if the test condition fails.  The `warn()` method is great for tests that will have different results in different browsers, such as canvas data url comparisons, text metric dimensions, etc.  
+##Generate documentation
 
-TIP: prepend a test name with a `*` to only run that particular test, or prepend a test name with `!` to omit that test.
-
-#Pull Requests
-I'd be happy to review any pull requests that may better the KineticJS project, in particular if you have a bug fix, enhancement, or a new shape (see `src/shapes` for examples).  Before doing so, please first make sure that all of the unit tests and functional tests pass, and also make sure that you don't have any jshint errors.  You can do so by running `grunt hint`
+Run `grunt docs` which will build the documentation files and place them in the docs folder.

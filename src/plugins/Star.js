@@ -11,35 +11,35 @@
      * @@shapeParams
      * @@nodeParams
      * @example
-     * var star = new Kinetic.Star({<br>
-     *   x: 100,<br>
-     *   y: 200,<br>
-     *   numPoints: 5,<br>
-     *   innerRadius: 70,<br>
-     *   outerRadius: 70,<br>
-     *   fill: 'red',<br>
-     *   stroke: 'black',<br>
-     *   strokeWidth: 4<br>
+     * var star = new Kinetic.Star({
+     *   x: 100,
+     *   y: 200,
+     *   numPoints: 5,
+     *   innerRadius: 70,
+     *   outerRadius: 70,
+     *   fill: 'red',
+     *   stroke: 'black',
+     *   strokeWidth: 4
      * });
      */
     Kinetic.Star = function(config) {
-        this._initStar(config);
+        this.___init(config);
     };
 
     Kinetic.Star.prototype = {
-        _initStar: function(config) {
-            this.createAttrs();
-
+        ___init: function(config) {
             // call super constructor
             Kinetic.Shape.call(this, config);
             this.className = 'Star';
-            this._setDrawFuncs();
+            this.sceneFunc(this._sceneFunc);
         },
-        drawFunc: function(canvas) {
-            var context = canvas.getContext(), innerRadius = this.attrs.innerRadius, outerRadius = this.attrs.outerRadius, numPoints = this.attrs.numPoints;
+        _sceneFunc: function(context) {
+            var innerRadius = this.innerRadius(),
+                outerRadius = this.outerRadius(),
+                numPoints = this.numPoints();
 
             context.beginPath();
-            context.moveTo(0, 0 - this.attrs.outerRadius);
+            context.moveTo(0, 0 - outerRadius);
 
             for(var n = 1; n < numPoints * 2; n++) {
                 var radius = n % 2 === 0 ? outerRadius : innerRadius;
@@ -49,13 +49,13 @@
             }
             context.closePath();
 
-            canvas.fillStroke(this);
+            context.fillStrokeShape(this);
         }
     };
     Kinetic.Util.extend(Kinetic.Star, Kinetic.Shape);
 
     // add getters setters
-    Kinetic.Node.addGetterSetter(Kinetic.Star, 'numPoints', 0);
+    Kinetic.Factory.addGetterSetter(Kinetic.Star, 'numPoints', 5);
 
     /**
      * set number of points
@@ -72,7 +72,7 @@
      * @memberof Kinetic.Star.prototype
      */
 
-    Kinetic.Node.addGetterSetter(Kinetic.Star, 'innerRadius', 0);
+    Kinetic.Factory.addGetterSetter(Kinetic.Star, 'innerRadius', 0);
 
     /**
      * set inner radius
@@ -89,7 +89,7 @@
      * @memberof Kinetic.Star.prototype
      */
 
-    Kinetic.Node.addGetterSetter(Kinetic.Star, 'outerRadius', 0);
+    Kinetic.Factory.addGetterSetter(Kinetic.Star, 'outerRadius', 0);
 
     /**
      * set outer radius
@@ -105,4 +105,6 @@
      * @method
      * @memberof Kinetic.Star.prototype
      */
+
+    Kinetic.Collection.mapMethods(Kinetic.Star);
 })();

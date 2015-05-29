@@ -68,7 +68,8 @@
         451,446,442,437,433,428,424,420,416,412,408,404,400,396,392,388,
         385,381,377,374,370,367,363,360,357,354,350,347,344,341,338,335,
         332,329,326,323,320,318,315,312,310,307,304,302,299,297,294,292,
-        289,287,285,282,280,278,275,273,271,269,267,265,263,261,259];
+        289,287,285,282,280,278,275,273,271,269,267,265,263,261,259
+    ];
 
     var shg_table = [
         9, 11, 12, 13, 13, 14, 14, 15, 15, 15, 15, 16, 16, 16, 16, 17,
@@ -86,7 +87,8 @@
         24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
         24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
         24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
-        24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24 ];
+        24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24
+    ];
 
     function filterGaussBlurRGBA( imageData, radius) {
 
@@ -105,6 +107,7 @@
             radiusPlus1  = radius + 1,
             sumFactor = radiusPlus1 * ( radiusPlus1 + 1 ) / 2,
             stackStart = new BlurStack(),
+            stackEnd = null,
             stack = stackStart,
             stackIn = null,
             stackOut = null,
@@ -113,7 +116,9 @@
 
         for ( i = 1; i < div; i++ ) {
             stack = stack.next = new BlurStack();
-            if ( i == radiusPlus1 ) var stackEnd = stack;
+            if ( i == radiusPlus1 ){
+                stackEnd = stack;
+            }
         }
 
         stack.next = stackStart;
@@ -167,7 +172,7 @@
             for ( x = 0; x < width; x++ )
             {
                 pixels[yi+3] = pa = (a_sum * mul_sum) >> shg_sum;
-                if ( pa != 0 )
+                if ( pa !== 0 )
                 {
                     pa = 255 / pa;
                     pixels[yi]   = ((r_sum * mul_sum) >> shg_sum) * pa;
@@ -325,17 +330,30 @@
     /**
      * Blur Filter
      * @function
+     * @name Blur
      * @memberof Kinetic.Filters
      * @param {Object} imageData
+     * @example
+     * node.cache();
+     * node.filters([Kinetic.Filters.Blur]);
+     * node.blurRadius(10);
      */
-    Kinetic.Filters.Blur = function(imageData) {
-        var radius = this.getFilterRadius() | 0;
+    Kinetic.Filters.Blur = function Blur(imageData) {
+        var radius = Math.round(this.blurRadius());
 
         if (radius > 0) {
             filterGaussBlurRGBA(imageData, radius);
         }
     };
 
-    Kinetic.Node.addFilterGetterSetter(Kinetic.Image, 'filterRadius', 0);
+    Kinetic.Factory.addGetterSetter(Kinetic.Node, 'blurRadius', 0, null, Kinetic.Factory.afterSetFilter);
 
+    /**
+    * get/set blur radius. Use with {@link Kinetic.Filters.Blur} filter
+    * @name blurRadius
+    * @method
+    * @memberof Kinetic.Node.prototype
+    * @param {Integer} radius
+    * @returns {Integer}
+    */
 })();
